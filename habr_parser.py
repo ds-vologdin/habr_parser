@@ -3,14 +3,36 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
+import asyncio
+
+
+async def fetch_raw_habr_pages_async(pages=10):
+    loop = asyncio.get_event_loop()
+    habr = []
+    futures = []
+    for page_number in range(1, pages+1):
+        futures.append(
+            loop.run_in_executor(
+                None, requests.get,
+                'https://habr.com/all/page%d/' % page_number
+            )
+        )
+    for future in futures:
+        response = await future
+        habr.append(response.text)
+    print('fetch %d pages from habr.com' % len(futures))
+    return habr
 
 
 def fetch_raw_habr_pages(pages=10):
     ''' Получить сырые данные с хабра '''
-    pages_habr = []
-    for page_number in range(1, pages+1):
-        r = requests.get('https://habr.com/all/page%d/' % page_number)
-        pages_habr.append(r.text)
+    loop = asyncio.get_event_loop()
+    pages_habr = loop.run_until_complete(fetch_raw_habr_pages_async(pages))
+
+    # for page_number in range(1, pages+1):
+        # r = requests.get('https://habr.com/all/page%d/' % page_number)
+        # pages_habr.append(r.text)
+        # print('https://habr.com/all/page%d/' % page_number)
     return pages_habr
 
 
@@ -20,18 +42,18 @@ def convert_habr_date_to_datetime(date_habr):
     yesterday = today - timedelta(days=1)
     date_habr = date_habr.replace('сегодня в', today.strftime('%d-%m-%Y'))
     date_habr = date_habr.replace('вчера в', yesterday.strftime('%d-%m-%Y'))
-    date_habr = date_habr.replace(' января в', yesterday.strftime('-01-%Y'))
-    date_habr = date_habr.replace(' февраля в', yesterday.strftime('-02-%Y'))
-    date_habr = date_habr.replace(' марта в', yesterday.strftime('-03-%Y'))
-    date_habr = date_habr.replace(' апреля в', yesterday.strftime('-04-%Y'))
-    date_habr = date_habr.replace(' мая в', yesterday.strftime('-05-%Y'))
-    date_habr = date_habr.replace(' июня в', yesterday.strftime('-06-%Y'))
-    date_habr = date_habr.replace(' июля в', yesterday.strftime('-07-%Y'))
-    date_habr = date_habr.replace(' августа в', yesterday.strftime('-08-%Y'))
-    date_habr = date_habr.replace(' сентября в', yesterday.strftime('-09-%Y'))
-    date_habr = date_habr.replace(' октября в', yesterday.strftime('-10-%Y'))
-    date_habr = date_habr.replace(' ноября в', yesterday.strftime('-11-%Y'))
-    date_habr = date_habr.replace(' декабря в', yesterday.strftime('-12-%Y'))
+    date_habr = date_habr.replace(' января в', today.strftime('-01-%Y'))
+    date_habr = date_habr.replace(' февраля в', today.strftime('-02-%Y'))
+    date_habr = date_habr.replace(' марта в', today.strftime('-03-%Y'))
+    date_habr = date_habr.replace(' апреля в', today.strftime('-04-%Y'))
+    date_habr = date_habr.replace(' мая в', today.strftime('-05-%Y'))
+    date_habr = date_habr.replace(' июня в', today.strftime('-06-%Y'))
+    date_habr = date_habr.replace(' июля в', today.strftime('-07-%Y'))
+    date_habr = date_habr.replace(' августа в', today.strftime('-08-%Y'))
+    date_habr = date_habr.replace(' сентября в', today.strftime('-09-%Y'))
+    date_habr = date_habr.replace(' октября в', today.strftime('-10-%Y'))
+    date_habr = date_habr.replace(' ноября в', today.strftime('-11-%Y'))
+    date_habr = date_habr.replace(' декабря в', today.strftime('-12-%Y'))
     return datetime.strptime(date_habr, '%d-%m-%Y %H:%M')
 
 
@@ -44,7 +66,6 @@ def parse_habr_pages(habr_pages):
         articles = soup.find_all("article", class_="post")
 
         for article in articles:
-            print('-'*80)
 
             date_of_publication_tag = article.find("span", class_="post__time")
             if not date_of_publication_tag:
@@ -53,7 +74,6 @@ def parse_habr_pages(habr_pages):
             date_of_publication = convert_habr_date_to_datetime(
                 date_of_publication_tag.get_text()
             )
-            print(date_of_publication)
 
             header_article_tag = article.find("a", class_="post__title_link")
             if not header_article_tag:
@@ -61,18 +81,46 @@ def parse_habr_pages(habr_pages):
 
             header_article = header_article_tag.get_text()
 
-            print(header_article)
             headers_articles.append(
                 {'date': date_of_publication,
                  'header': header_article}
             )
+    return headers_articles
 
-    return []
+
+def get_weeks(date_begin, date_end):
+    # Формируем список недель
+    data_cur = date_begin - timedelta(days=date_begin.weekday())
+    delta = date_end - data_cur
+
+    return [
+        (data_cur + timedelta(days=i), data_cur + timedelta(days=i+7))
+        for i in range(0, delta.days, 7)
+    ]
 
 
 def divide_headers_at_weeks(headers_articles):
     ''' Разделить заголовки по неделям '''
-    return []
+    if not headers_articles:
+        return []
+    # Берём даты публикаций самой старой и самой свежей статьи
+    date_begin = headers_articles[-1]['date'].date()
+    date_end = headers_articles[0]['date'].date()
+    print(date_begin, date_end)
+    weeks = get_weeks(date_begin, date_end)
+    print(weeks)
+
+    headers_articles_weeks = []
+    for date_begin_week, date_end_week in weeks:
+        headers_articles_weeks.append({
+            'date': date_begin_week,
+            'headers_articles': [
+                header_article for header_article in headers_articles
+                if (header_article['date'].date() >= date_begin_week and
+                    header_article['date'].date() < date_end_week)
+            ]
+        })
+    return headers_articles_weeks
 
 
 def parse_nons_in_headers_articles(headers_articles):
@@ -86,10 +134,16 @@ def get_top_words(nons, top_size=10):
 
 
 def main(args):
-    habr_pages = fetch_raw_habr_pages(pages=10)
+    habr_pages = fetch_raw_habr_pages(pages=100)
+
     headers_articles = parse_habr_pages(habr_pages)
+    print('количество статей: %d' % len(headers_articles))
+
     headers_articles_weeks = divide_headers_at_weeks(headers_articles)
+
     for headers_articles in headers_articles_weeks:
+        print('%s: %d' % (headers_articles['date'],
+                          len(headers_articles['headers_articles'])))
         nons = parse_nons_in_headers_articles(headers_articles)
         nons_top = get_top_words(nons, top_size=10)
     return 0
