@@ -7,6 +7,7 @@ import asyncio
 
 
 async def fetch_raw_habr_pages_async(pages=10):
+    ''' Функция асинхронного получения страниц с хабра '''
     loop = asyncio.get_event_loop()
     pages_habr = []
     futures = []
@@ -17,6 +18,7 @@ async def fetch_raw_habr_pages_async(pages=10):
                 'https://habr.com/all/page%d/' % page_number
             )
         )
+    # Собираем данные в pages_habr
     for future in futures:
         response = await future
         pages_habr.append(response.text)
@@ -57,18 +59,19 @@ def parse_habr_pages(habr_pages):
     headers_articles = []
     for page_text in habr_pages:
         soup = BeautifulSoup(page_text, "html.parser")
+        # Ищем тег article с классом post - вот оно! статья здесь
         articles = soup.find_all("article", class_="post")
 
         for article in articles:
-
+            # Ищем тег span с классом post__time - тут дата публикации
             date_of_publication_tag = article.find("span", class_="post__time")
             if not date_of_publication_tag:
                 continue
-
+            # Конвертируем её в datetime
             date_of_publication = convert_habr_date_to_datetime(
                 date_of_publication_tag.get_text()
             )
-
+            # Ищем тег a с классом post__title_link - тут заголовок статьи
             header_article_tag = article.find("a", class_="post__title_link")
             if not header_article_tag:
                 continue
