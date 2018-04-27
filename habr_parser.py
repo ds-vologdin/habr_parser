@@ -8,7 +8,7 @@ import asyncio
 
 async def fetch_raw_habr_pages_async(pages=10):
     loop = asyncio.get_event_loop()
-    habr = []
+    pages_habr = []
     futures = []
     for page_number in range(1, pages+1):
         futures.append(
@@ -19,20 +19,14 @@ async def fetch_raw_habr_pages_async(pages=10):
         )
     for future in futures:
         response = await future
-        habr.append(response.text)
-    print('fetch %d pages from habr.com' % len(futures))
-    return habr
+        pages_habr.append(response.text)
+    return pages_habr
 
 
 def fetch_raw_habr_pages(pages=10):
     ''' Получить сырые данные с хабра '''
     loop = asyncio.get_event_loop()
     pages_habr = loop.run_until_complete(fetch_raw_habr_pages_async(pages))
-
-    # for page_number in range(1, pages+1):
-        # r = requests.get('https://habr.com/all/page%d/' % page_number)
-        # pages_habr.append(r.text)
-        # print('https://habr.com/all/page%d/' % page_number)
     return pages_habr
 
 
@@ -58,7 +52,7 @@ def convert_habr_date_to_datetime(date_habr):
 
 
 def parse_habr_pages(habr_pages):
-    ''' Распарсить сырые страницы: выбрать заголовки статетей с датами
+    ''' Распарсить сырые страницы: выбрать заголовки статей с датами
         публикации '''
     headers_articles = []
     for page_text in habr_pages:
@@ -92,7 +86,6 @@ def get_weeks(date_begin, date_end):
     # Формируем список недель
     data_cur = date_begin - timedelta(days=date_begin.weekday())
     delta = date_end - data_cur
-
     return [
         (data_cur + timedelta(days=i), data_cur + timedelta(days=i+7))
         for i in range(0, delta.days, 7)
@@ -106,10 +99,11 @@ def divide_headers_at_weeks(headers_articles):
     # Берём даты публикаций самой старой и самой свежей статьи
     date_begin = headers_articles[-1]['date'].date()
     date_end = headers_articles[0]['date'].date()
-    print(date_begin, date_end)
-    weeks = get_weeks(date_begin, date_end)
-    print(weeks)
 
+    # Формируем список недель
+    weeks = get_weeks(date_begin, date_end)
+
+    # Разбиваем статьи по неделям
     headers_articles_weeks = []
     for date_begin_week, date_end_week in weeks:
         headers_articles_weeks.append({
@@ -135,6 +129,7 @@ def get_top_words(nons, top_size=10):
 
 def main(args):
     habr_pages = fetch_raw_habr_pages(pages=100)
+    print('получили %d страниц с habr.com' % len(habr_pages))
 
     headers_articles = parse_habr_pages(habr_pages)
     print('количество статей: %d' % len(headers_articles))
