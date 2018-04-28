@@ -1,2 +1,4 @@
+pymorphy2==0.8
 requests==2.18.4
+texttable==1.2.1
 beautifulsoup4==4.6.0
