@@ -4,6 +4,15 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import asyncio
+import pymorphy2
+import collections
+from texttable import Texttable
+import getopt
+
+
+def flat(not_flat_list):
+    """ [(1,2), (3,4)] -> [1, 2, 3, 4]"""
+    return [item for sublist in not_flat_list for item in sublist]
 
 
 async def fetch_raw_habr_pages_async(pages=10):
@@ -59,7 +68,7 @@ def parse_habr_pages(habr_pages):
     headers_articles = []
     for page_text in habr_pages:
         soup = BeautifulSoup(page_text, "html.parser")
-        # Ищем тег article с классом post - вот оно! статья здесь
+        # Ищем теги article с классом post - вот оно! статьи здесь
         articles = soup.find_all("article", class_="post")
 
         for article in articles:
@@ -120,30 +129,120 @@ def divide_headers_at_weeks(headers_articles):
     return headers_articles_weeks
 
 
-def parse_nons_in_headers_articles(headers_articles):
+def get_noun_normal_form(word):
+    ''' Функция определяет нормальную форму существительного
+    Если word не существительное возращает None
+    '''
+    return None
+
+
+def parse_nouns_in_headers_articles(headers_articles):
     ''' Выбрать существительные '''
-    return []
+    # Разбиваем заголовок на слова
+    words = flat([
+        header_article['header'].split()
+        for header_article in headers_articles['headers_articles']
+    ])
+
+    morph = pymorphy2.MorphAnalyzer()
+    nouns = []
+    for word in words:
+        # Морфологический разбор
+        word_parses = morph.parse(word)
+        # Выбирать из всех морфологических значений не верно - много мусора
+        # Например "под", "a", "ли" ...
+        # noun_normal_form = ''
+        # for word_parse in word_parses:
+        #     if 'NOUN' in word_parse.tag:
+        #         noun_normal_form = word_parse.normal_form
+        #         break
+        # Поэтому смотрим первое морфологическое значение - часто употребимое
+        if word_parses:
+            if 'NOUN' in word_parses[0].tag:
+                nouns.append(word_parses[0].normal_form)
+    return nouns
 
 
 def get_top_words(nons, top_size=10):
     ''' Сформировать ТОП слов '''
-    return []
+    return collections.Counter(nons).most_common(top_size)
+
+
+def usage():
+    print("usage: python3", sys.argv[0], "OPTIONS")
+    print("OPTIONS")
+    help_text = '''--pages=XX По умолчанию pages=20
+--help
+'''
+    print(help_text)
+
+
+def parse_argv():
+    # Смотрим переданные параметры и инициируем переменные
+    try:
+        opts, args = getopt.getopt(
+            sys.argv[1:], '', ['pages=', 'help'])
+    except getopt.GetoptError as err:
+        print("ошибка задания параметров: ", err)
+        usage()
+        return None
+
+    options = {}
+    for o, a in opts:
+        if o == '--pages':
+            try:
+                options['pages'] = int(a)
+            except:
+                print('pages должен быть числом')
+                usage()
+                return None
+        elif o == '--help':
+            usage()
+            return None
+        else:
+            print('неверный параметр: %s' % (o))
+            usage()
+            return None
+    return options
 
 
 def main(args):
-    habr_pages = fetch_raw_habr_pages(pages=100)
+
+    # Парсим argv
+    options = parse_argv()
+    if not options:
+        return -1
+
+    pages_count = options.get('pages', 20)
+
+    # Получаем содержимое страниц
+    habr_pages = fetch_raw_habr_pages(pages_count)
     print('получили %d страниц с habr.com' % len(habr_pages))
 
+    # Получаем список заголовков
     headers_articles = parse_habr_pages(habr_pages)
     print('количество статей: %d' % len(headers_articles))
 
+    # Разбиваем выборку на недели
     headers_articles_weeks = divide_headers_at_weeks(headers_articles)
 
+    # Инициализируем таблицу на печать
+    table = Texttable()
+    table.set_cols_align(['c', 'l'])
+    table.set_cols_valign(['m', 'm'])
+    table.header(['Начало недели', 'Популярные слова'])
+
+    # Формируем список популярных существительных по каждой неделе
     for headers_articles in headers_articles_weeks:
-        print('%s: %d' % (headers_articles['date'],
-                          len(headers_articles['headers_articles'])))
-        nons = parse_nons_in_headers_articles(headers_articles)
-        nons_top = get_top_words(nons, top_size=10)
+        nouns = parse_nouns_in_headers_articles(headers_articles)
+        nouns_top = get_top_words(nouns, top_size=10)
+        # Добавляем строку в таблицу
+        table.add_row((
+            headers_articles['date'],
+            ', '.join(['%s (%d)' % (noun, count) for noun, count in nouns_top])
+        ))
+    # Прорисовываем таблицу
+    print(table.draw())
     return 0
 
 if __name__ == '__main__':
