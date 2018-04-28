@@ -129,13 +129,6 @@ def divide_headers_at_weeks(headers_articles):
     return headers_articles_weeks
 
 
-def get_noun_normal_form(word):
-    ''' Функция определяет нормальную форму существительного
-    Если word не существительное возращает None
-    '''
-    return None
-
-
 def parse_nouns_in_headers_articles(headers_articles):
     ''' Выбрать существительные '''
     # Разбиваем заголовок на слова
