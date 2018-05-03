@@ -162,7 +162,7 @@ def get_top_words(nons, top_size=10):
 
 
 def usage():
-    print("usage: python3", sys.argv[0], "OPTIONS")
+    print("usage: python3 {0} OPTIONS".format(sys.argv[0]))
     print("OPTIONS")
     help_text = '''--pages=XX По умолчанию pages=20
 --help
@@ -193,7 +193,7 @@ def parse_argv():
             usage()
             return None
         else:
-            print('неверный параметр: %s' % (o))
+            print('неверный параметр: {}'.format(o))
             usage()
             return None
     return options
@@ -224,11 +224,11 @@ def main(args):
 
     # Получаем содержимое страниц
     habr_pages = fetch_raw_habr_pages(pages_count)
-    print('получили %d страниц с habr.com' % len(habr_pages))
+    print('получили {0} страниц с habr.com'.format(len(habr_pages)))
 
     # Получаем список заголовков
     headers_articles = parse_habr_pages(habr_pages)
-    print('количество статей: %d' % len(headers_articles))
+    print('количество статей: {0}'.format(len(headers_articles)))
 
     # Разбиваем выборку на недели
     headers_articles_weeks = divide_headers_at_weeks(headers_articles)
