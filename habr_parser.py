@@ -199,12 +199,26 @@ def parse_argv():
     return options
 
 
+def output_words_stat(nouns_weeks):
+    # Инициализируем таблицу на печать
+    table = Texttable()
+    table.set_cols_align(['c', 'l'])
+    table.set_cols_valign(['m', 'm'])
+    table.header(['Начало недели', 'Популярные слова'])
+    for nouns_week in nouns_weeks:
+        top_words = nouns_week['top_words']
+        table.add_row((
+            nouns_week['date'],
+            ', '.join(['%s (%d)' % (noun, count) for noun, count in top_words])
+        ))
+    # Прорисовываем таблицу
+    print(table.draw())
+
+
 def main(args):
 
     # Парсим argv
     options = parse_argv()
-    if not options:
-        return -1
 
     pages_count = options.get('pages', 20)
 
@@ -219,23 +233,15 @@ def main(args):
     # Разбиваем выборку на недели
     headers_articles_weeks = divide_headers_at_weeks(headers_articles)
 
-    # Инициализируем таблицу на печать
-    table = Texttable()
-    table.set_cols_align(['c', 'l'])
-    table.set_cols_valign(['m', 'm'])
-    table.header(['Начало недели', 'Популярные слова'])
-
     # Формируем список популярных существительных по каждой неделе
+    nouns_weeks = []
     for headers_articles in headers_articles_weeks:
         nouns = parse_nouns_in_headers_articles(headers_articles)
-        nouns_top = get_top_words(nouns, top_size=10)
-        # Добавляем строку в таблицу
-        table.add_row((
-            headers_articles['date'],
-            ', '.join(['%s (%d)' % (noun, count) for noun, count in nouns_top])
-        ))
-    # Прорисовываем таблицу
-    print(table.draw())
+        nouns_weeks.append({
+            'date': headers_articles['date'],
+            'top_words': get_top_words(nouns, top_size=10),
+        })
+    output_words_stat(nouns_weeks)
     return 0
 
 if __name__ == '__main__':
