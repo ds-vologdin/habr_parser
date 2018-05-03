@@ -65,7 +65,7 @@ def convert_habr_date_to_datetime(date_habr):
 def parse_habr_pages(habr_pages):
     ''' Распарсить сырые страницы: выбрать заголовки статей с датами
         публикации '''
-    headers_articles = []
+    titles_articles = []
     for page_text in habr_pages:
         soup = BeautifulSoup(page_text, "html.parser")
         # Ищем теги article с классом post - вот оно! статьи здесь
@@ -81,17 +81,17 @@ def parse_habr_pages(habr_pages):
                 date_of_publication_tag.get_text()
             )
             # Ищем тег a с классом post__title_link - тут заголовок статьи
-            header_article_tag = article.find("a", class_="post__title_link")
-            if not header_article_tag:
+            title_article_tag = article.find("a", class_="post__title_link")
+            if not title_article_tag:
                 continue
 
-            header_article = header_article_tag.get_text()
+            title_article = title_article_tag.get_text()
 
-            headers_articles.append(
+            titles_articles.append(
                 {'date': date_of_publication,
-                 'header': header_article}
+                 'title': title_article}
             )
-    return headers_articles
+    return titles_articles
 
 
 def get_weeks(date_begin, date_end):
@@ -104,37 +104,37 @@ def get_weeks(date_begin, date_end):
     ]
 
 
-def divide_headers_at_weeks(headers_articles):
+def divide_titles_at_weeks(titles_articles):
     ''' Разделить заголовки по неделям '''
-    if not headers_articles:
+    if not titles_articles:
         return []
     # Берём даты публикаций самой старой и самой свежей статьи
-    date_begin = headers_articles[-1]['date'].date()
-    date_end = headers_articles[0]['date'].date()
+    date_begin = titles_articles[-1]['date'].date()
+    date_end = titles_articles[0]['date'].date()
 
     # Формируем список недель
     weeks = get_weeks(date_begin, date_end)
 
     # Разбиваем статьи по неделям
-    headers_articles_weeks = []
+    titles_articles_weeks = []
     for date_begin_week, date_end_week in weeks:
-        headers_articles_weeks.append({
+        titles_articles_weeks.append({
             'date': date_begin_week,
-            'headers_articles': [
-                header_article for header_article in headers_articles
-                if (header_article['date'].date() >= date_begin_week and
-                    header_article['date'].date() < date_end_week)
+            'titles_articles': [
+                title_article for title_article in titles_articles
+                if (title_article['date'].date() >= date_begin_week and
+                    title_article['date'].date() < date_end_week)
             ]
         })
-    return headers_articles_weeks
+    return titles_articles_weeks
 
 
-def parse_nouns_in_headers_articles(headers_articles):
+def parse_nouns_in_titles_articles(titles_articles):
     ''' Выбрать существительные '''
     # Разбиваем заголовок на слова
     words = flat([
-        header_article['header'].split()
-        for header_article in headers_articles['headers_articles']
+        title_article['title'].split()
+        for title_article in titles_articles['titles_articles']
     ])
 
     morph = pymorphy2.MorphAnalyzer()
@@ -193,7 +193,7 @@ def parse_argv():
             usage()
             return None
         else:
-            print('неверный параметр: {}'.format(o))
+            print('неверный параметр: {0}'.format(o))
             usage()
             return None
     return options
@@ -204,7 +204,7 @@ def output_words_stat(nouns_weeks):
     table = Texttable()
     table.set_cols_align(['c', 'l'])
     table.set_cols_valign(['m', 'm'])
-    table.header(['Начало недели', 'Популярные слова'])
+    table.title(['Начало недели', 'Популярные слова'])
     for nouns_week in nouns_weeks:
         top_words = nouns_week['top_words']
         table.add_row((
@@ -227,22 +227,23 @@ def main(args):
     print('получили {0} страниц с habr.com'.format(len(habr_pages)))
 
     # Получаем список заголовков
-    headers_articles = parse_habr_pages(habr_pages)
-    print('количество статей: {0}'.format(len(headers_articles)))
+    titles_articles = parse_habr_pages(habr_pages)
+    print('количество статей: {0}'.format(len(titles_articles)))
 
     # Разбиваем выборку на недели
-    headers_articles_weeks = divide_headers_at_weeks(headers_articles)
+    titles_articles_weeks = divide_titles_at_weeks(titles_articles)
 
     # Формируем список популярных существительных по каждой неделе
     nouns_weeks = []
-    for headers_articles in headers_articles_weeks:
-        nouns = parse_nouns_in_headers_articles(headers_articles)
+    for titles_articles in titles_articles_weeks:
+        nouns = parse_nouns_in_titles_articles(titles_articles)
         nouns_weeks.append({
-            'date': headers_articles['date'],
+            'date': titles_articles['date'],
             'top_words': get_top_words(nouns, top_size=10),
         })
     output_words_stat(nouns_weeks)
     return 0
+
 
 if __name__ == '__main__':
     import sys
