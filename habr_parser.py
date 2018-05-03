@@ -204,7 +204,7 @@ def output_words_stat(nouns_weeks):
     table = Texttable()
     table.set_cols_align(['c', 'l'])
     table.set_cols_valign(['m', 'm'])
-    table.title(['Начало недели', 'Популярные слова'])
+    table.header(['Начало недели', 'Популярные слова'])
     for nouns_week in nouns_weeks:
         top_words = nouns_week['top_words']
         table.add_row((
@@ -234,14 +234,14 @@ def main(args):
     titles_articles_weeks = divide_titles_at_weeks(titles_articles)
 
     # Формируем список популярных существительных по каждой неделе
-    nouns_weeks = []
+    top_nouns_weeks = []
     for titles_articles in titles_articles_weeks:
         nouns = parse_nouns_in_titles_articles(titles_articles)
-        nouns_weeks.append({
+        top_nouns_weeks.append({
             'date': titles_articles['date'],
             'top_words': get_top_words(nouns, top_size=10),
         })
-    output_words_stat(nouns_weeks)
+    output_words_stat(top_nouns_weeks)
     return 0
 
 
