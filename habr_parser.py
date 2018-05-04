@@ -24,7 +24,7 @@ async def fetch_raw_habr_pages_async(pages=10):
         futures.append(
             loop.run_in_executor(
                 None, requests.get,
-                'https://habr.com/all/page%d/' % page_number
+                'https://habr.com/all/page{0}/'.format(page_number)
             )
         )
     # Собираем данные в pages_habr
@@ -142,7 +142,7 @@ def parse_nouns_in_titles_articles(titles_articles):
     for word in words:
         # Морфологический разбор
         word_parses = morph.parse(word)
-        # Выбирать из всех морфологических значений не верно - много мусора
+        # Выбирать из всех морфологических значений неверно - много мусора
         # Например "под", "a", "ли" ...
         # noun_normal_form = ''
         # for word_parse in word_parses:
