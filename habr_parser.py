@@ -8,6 +8,7 @@ import pymorphy2
 import collections
 from texttable import Texttable
 import getopt
+import dateparser
 
 
 def flat(not_flat_list):
@@ -43,23 +44,7 @@ def fetch_raw_habr_pages(pages=10):
 
 def convert_habr_date_to_datetime(date_habr):
     ''' Конвертер строковой даты с habr.com  в datetime '''
-    today = datetime.now()
-    yesterday = today - timedelta(days=1)
-    date_habr = date_habr.replace('сегодня в', today.strftime('%d-%m-%Y'))
-    date_habr = date_habr.replace('вчера в', yesterday.strftime('%d-%m-%Y'))
-    date_habr = date_habr.replace(' января в', today.strftime('-01-%Y'))
-    date_habr = date_habr.replace(' февраля в', today.strftime('-02-%Y'))
-    date_habr = date_habr.replace(' марта в', today.strftime('-03-%Y'))
-    date_habr = date_habr.replace(' апреля в', today.strftime('-04-%Y'))
-    date_habr = date_habr.replace(' мая в', today.strftime('-05-%Y'))
-    date_habr = date_habr.replace(' июня в', today.strftime('-06-%Y'))
-    date_habr = date_habr.replace(' июля в', today.strftime('-07-%Y'))
-    date_habr = date_habr.replace(' августа в', today.strftime('-08-%Y'))
-    date_habr = date_habr.replace(' сентября в', today.strftime('-09-%Y'))
-    date_habr = date_habr.replace(' октября в', today.strftime('-10-%Y'))
-    date_habr = date_habr.replace(' ноября в', today.strftime('-11-%Y'))
-    date_habr = date_habr.replace(' декабря в', today.strftime('-12-%Y'))
-    return datetime.strptime(date_habr, '%d-%m-%Y %H:%M')
+    return dateparser.parse(date_habr)
 
 
 def parse_habr_pages(habr_pages):
