@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
+from datetime import timedelta
 import asyncio
 import pymorphy2
 import collections
