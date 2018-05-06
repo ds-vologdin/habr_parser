@@ -7,7 +7,7 @@ import asyncio
 import pymorphy2
 import collections
 from texttable import Texttable
-import getopt
+import argparse
 import dateparser
 
 
@@ -146,42 +146,16 @@ def get_top_words(nons, top_size=10):
     return collections.Counter(nons).most_common(top_size)
 
 
-def usage():
-    print("usage: python3 {0} OPTIONS".format(sys.argv[0]))
-    print("OPTIONS")
-    help_text = '''--pages=XX По умолчанию pages=20
---help
-'''
-    print(help_text)
-
-
 def parse_argv():
-    # Смотрим переданные параметры и инициируем переменные
-    try:
-        opts, args = getopt.getopt(
-            sys.argv[1:], '', ['pages=', 'help'])
-    except getopt.GetoptError as err:
-        print("ошибка задания параметров: ", err)
-        usage()
-        return None
+    description_programm = '''Приложение для подсчёта наиболее употребимых \
+существительных в заголовках статей на habr.com'''
+    parser = argparse.ArgumentParser(description=description_programm)
+    parser.add_argument(
+        "--pages", type=int, default=20,
+        help="Количество страниц с habr.com. Поумолчанию 20."
+    )
 
-    options = {}
-    for o, a in opts:
-        if o == '--pages':
-            try:
-                options['pages'] = int(a)
-            except:
-                print('pages должен быть числом')
-                usage()
-                return None
-        elif o == '--help':
-            usage()
-            return None
-        else:
-            print('неверный параметр: {0}'.format(o))
-            usage()
-            return None
-    return options
+    return parser.parse_args()
 
 
 def output_words_stat(nouns_weeks):
@@ -203,9 +177,9 @@ def output_words_stat(nouns_weeks):
 def main(args):
 
     # Парсим argv
-    options = parse_argv()
+    args = parse_argv()
 
-    pages_count = options.get('pages', 20)
+    pages_count = args.pages
 
     # Получаем содержимое страниц
     habr_pages = fetch_raw_habr_pages(pages_count)
