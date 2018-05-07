@@ -136,7 +136,10 @@ def parse_nouns_in_titles_articles(titles_articles):
         #         break
         # Поэтому смотрим первое морфологическое значение - часто употребимое
         if word_parses:
-            if 'NOUN' in word_parses[0].tag:
+            if ('NOUN' in word_parses[0].tag or
+                    'LATN' in word_parses[0].tag):
+                # Латинские имена считаем существительными :) статистика с ними
+                # интереснее
                 nouns.append(word_parses[0].normal_form)
     return nouns
 
@@ -152,7 +155,11 @@ def parse_argv():
     parser = argparse.ArgumentParser(description=description_programm)
     parser.add_argument(
         "--pages", type=int, default=20,
-        help="Количество страниц с habr.com. Поумолчанию 20."
+        help="Количество страниц с habr.com. По-умолчанию 20."
+    )
+    parser.add_argument(
+        "--top-size", type=int, default=20,
+        help="Количество слов за каждую неделю. По-умолчанию 20."
     )
 
     return parser.parse_args()
@@ -180,6 +187,7 @@ def main(args):
     args = parse_argv()
 
     pages_count = args.pages
+    top_size = args.top_size
 
     # Получаем содержимое страниц
     habr_pages = fetch_raw_habr_pages(pages_count)
@@ -198,7 +206,7 @@ def main(args):
         nouns = parse_nouns_in_titles_articles(titles_articles)
         top_nouns_weeks.append({
             'date': titles_articles['date'],
-            'top_words': get_top_words(nouns, top_size=10),
+            'top_words': get_top_words(nouns, top_size),
         })
     output_words_stat(top_nouns_weeks)
     return 0
