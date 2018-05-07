@@ -9,6 +9,7 @@ import collections
 from texttable import Texttable
 import argparse
 import dateparser
+import re
 
 
 def flat(not_flat_list):
@@ -116,9 +117,12 @@ def divide_titles_at_weeks(titles_articles):
 
 def parse_nouns_in_titles_articles(titles_articles):
     ''' Выбрать существительные '''
+
     # Разбиваем заголовок на слова
+    # Если не очистить строку от "мусора", могут помешать подсчёту статистики
+    # кавычки или ещё какое-нибудь безобразие (для этого используем re)
     words = flat([
-        title_article['title'].split()
+        re.sub('[^a-zA-Zа-яА-Я0-9 -]', '', title_article['title']).split()
         for title_article in titles_articles['titles_articles']
     ])
 
