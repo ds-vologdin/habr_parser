@@ -1,11 +1,11 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+import sys
 from texttable import Texttable
 import argparse
 
 from words_statistic import parse_nouns_in_titles_articles, get_top_words
 from habr_parse import (
-    fetch_raw_habr_pages, parse_habr_pages, divide_titles_at_weeks
+    fetch_raw_habr_pages, divide_titles_at_weeks,
+    get_titles_articles_with_raw_habr_pages
 )
 
 
@@ -41,22 +41,17 @@ def output_words_stat(nouns_weeks):
 
 
 def main(args):
-
-    # Парсим argv
     args = parse_argv()
 
     pages_count = args.pages
     top_size = args.top_size
 
-    # Получаем содержимое страниц
     habr_pages = fetch_raw_habr_pages(pages_count)
     print('получили {0} страниц с habr.com'.format(len(habr_pages)))
 
-    # Получаем список заголовков
-    titles_articles = parse_habr_pages(habr_pages)
+    titles_articles = get_titles_articles_with_raw_habr_pages(habr_pages)
     print('количество статей: {0}'.format(len(titles_articles)))
 
-    # Разбиваем выборку на недели
     titles_articles_weeks = divide_titles_at_weeks(titles_articles)
 
     # Формируем список популярных существительных по каждой неделе
@@ -68,9 +63,7 @@ def main(args):
             'top_words': get_top_words(nouns, top_size),
         })
     output_words_stat(top_nouns_weeks)
-    return 0
 
 
 if __name__ == '__main__':
-    import sys
     sys.exit(main(sys.argv))

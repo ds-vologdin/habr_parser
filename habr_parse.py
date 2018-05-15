@@ -36,7 +36,7 @@ def convert_habr_date_to_datetime(date_habr):
     return dateparser.parse(date_habr)
 
 
-def parse_habr_pages(habr_pages):
+def get_titles_articles_with_raw_habr_pages(habr_pages):
     ''' Распарсить сырые страницы: выбрать заголовки статей с датами
         публикации '''
     titles_articles = []
