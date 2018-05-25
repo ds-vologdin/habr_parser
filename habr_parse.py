@@ -3,10 +3,17 @@ from bs4 import BeautifulSoup
 from datetime import timedelta
 import asyncio
 import dateparser
+from requests import Session
+from concurrent.futures import ThreadPoolExecutor
+from requests_futures.sessions import FuturesSession
 
 
 async def fetch_raw_habr_pages_async(pages=10):
-    ''' Функция асинхронного получения страниц с хабра '''
+    ''' Функция асинхронного получения страниц с хабра
+        НЕ РЕКОМЕНДОВАНА К ИСПОЛЬЗОВАНИЮ,  но работает испльзуйте на свой страх
+        и риск. Документация requests говорит о том, что IO блокируется, Хотя
+        тесты говорят об обратном
+    '''
     loop = asyncio.get_event_loop()
     pages_habr = []
     futures = []
@@ -24,10 +31,32 @@ async def fetch_raw_habr_pages_async(pages=10):
     return pages_habr
 
 
+def fetch_raw_habr_pages_requests_futures(pages=10):
+    ''' Получить сырые данные с хабра '''
+    session = FuturesSession(
+        executor=ThreadPoolExecutor(max_workers=20),
+        session=Session()
+    )
+    pages_habr = []
+    for page_number in range(1, pages+1):
+        r = session.get('https://habr.com/all/page%d/' % page_number)
+        pages_habr.append(r)
+    pages_habr = [
+        r.result().text for r in pages_habr
+    ]
+    return pages_habr
+
+
 def fetch_raw_habr_pages(pages=10):
     ''' Получить сырые данные с хабра '''
-    loop = asyncio.get_event_loop()
-    pages_habr = loop.run_until_complete(fetch_raw_habr_pages_async(pages))
+    # Вот так можно использовать request с asyncio
+    # НО РЕКОМЕНДУЕТСЯ! Документация request рекомендует пользоваться
+    # модулями с неблокирующими функциями IO
+    # loop = asyncio.get_event_loop()
+    # pages_habr = loop.run_until_complete(fetch_raw_habr_pages_async(pages))
+
+    # А этот метод РЕКОМЕНДОВАН!
+    pages_habr = fetch_raw_habr_pages_requests_futures(pages)
     return pages_habr
 
 
