@@ -40,6 +40,17 @@ def output_words_stat(nouns_weeks):
     print(table.draw())
 
 
+def parse_nouns_in_titles_articles_at_weeks(titles_articles_weeks, top_size):
+    top_nouns_weeks = []
+    for titles_articles in titles_articles_weeks:
+        nouns = parse_nouns_in_titles_articles(titles_articles)
+        top_nouns_weeks.append({
+            'date': titles_articles['date'],
+            'top_words': get_top_words(nouns, top_size),
+        })
+    return top_nouns_weeks
+
+
 def main(args):
     args = parse_argv()
 
@@ -54,14 +65,10 @@ def main(args):
 
     titles_articles_weeks = divide_titles_at_weeks(titles_articles)
 
-    # Формируем список популярных существительных по каждой неделе
-    top_nouns_weeks = []
-    for titles_articles in titles_articles_weeks:
-        nouns = parse_nouns_in_titles_articles(titles_articles)
-        top_nouns_weeks.append({
-            'date': titles_articles['date'],
-            'top_words': get_top_words(nouns, top_size),
-        })
+    top_nouns_weeks = parse_nouns_in_titles_articles_at_weeks(
+        titles_articles_weeks, top_size
+    )
+
     output_words_stat(top_nouns_weeks)
 
 
