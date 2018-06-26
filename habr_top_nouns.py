@@ -2,11 +2,9 @@ import sys
 from texttable import Texttable
 import argparse
 
-from words_statistic import parse_nouns_in_titles_articles, get_top_words
-from habr_parse import (
-    fetch_raw_habr_pages, divide_titles_at_weeks,
-    get_titles_articles_with_raw_habr_pages
-)
+from words_statistic import parse_nouns_in_titles_articles_at_weeks
+from habr_parse import fetch_raw_habr_pages, divide_titles_at_weeks
+from habr_parse import get_titles_articles_with_raw_habr_pages
 
 
 def parse_argv():
@@ -38,17 +36,6 @@ def output_words_stat(nouns_weeks):
         ))
     # Прорисовываем таблицу
     print(table.draw())
-
-
-def parse_nouns_in_titles_articles_at_weeks(titles_articles_weeks, top_size):
-    top_nouns_weeks = []
-    for titles_articles in titles_articles_weeks:
-        nouns = parse_nouns_in_titles_articles(titles_articles)
-        top_nouns_weeks.append({
-            'date': titles_articles['date'],
-            'top_words': get_top_words(nouns, top_size),
-        })
-    return top_nouns_weeks
 
 
 def main(args):
